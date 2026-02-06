@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pass Editor v7 (A4 300dpi • PDF Export)</title>
+
+  <!-- ✅ Favicon (SVG Data URI) -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ccircle%20cx='50'%20cy='50'%20r='46'%20fill='%23FF558F'/%3E%3Ctext%20x='50'%20y='62'%20text-anchor='middle'%20font-size='54'%20font-family='Pretendard,%20Arial,%20sans-serif'%20font-weight='800'%20fill='white'%3EM%3C/text%3E%3C/svg%3E" />
+
+  <!-- Pretendard -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+  <!-- jsPDF (PDF Export) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0b;
+      --panel:#111;
+      --border:rgba(255,255,255,.12);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --accent:#FF558F;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Pretendard,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg);
+      color:var(--text)
+    }
+
+    .wrap{
+      display:grid;
+      grid-template-columns:420px 1fr;
+      gap:16px;
+      padding:16px;
+      max-width:1400px;
+      margin:0 auto
+    }
+
+    /* ✅ 왼쪽 패널: 브라우저 높이 맞춤 */
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+
+      display:flex;
+      flex-direction:column;
+
+      height:calc(100vh - 32px);
+      overflow:auto;
+    }
+
+    h1{
+      font-size:18px;
+      margin:0 0 10px;
+      letter-spacing:-0.02em
+    }
+
+    /* ✅ 항목 간격: 중간값(15px) */
+    .row{
+      display:grid;
+      gap:8px;
+      margin:15px 0;
+    }
+
+    /* ✅ 타이틀-첫 항목 간격은 현재 그대로(10px) */
+    .panel > .row:first-of-type{
+      margin-top:10px;
+    }
+
+    label{
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center
+    }
+
+    input[type="text"],textarea,select{
+      width:100%;
+      border-radius:10px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      outline:none;
+      font-size:14px
+    }
+textarea{min-height:44px;resize:vertical;line-height:1.25;}
+
+    input[type="file"]{
+      width:100%;
+      padding:10px 0;
+      color:var(--muted)
+    }
+
+    /* ✅ Slider: 채워진 색을 --accent로 */
+    input[type="range"]{
+      width:100%;
+      -webkit-appearance:none;
+      appearance:none;
+      height:6px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      outline:none;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      border:2px solid rgba(0,0,0,.35);
+      cursor:pointer;
+      margin-top:-5px;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height:6px;
+      border-radius:999px;
+      background:linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--range-fill, 50%),
+        rgba(255,255,255,.12) var(--range-fill, 50%),
+        rgba(255,255,255,.12) 100%
+      );
+    }
+    /* Firefox */
+    input[type="range"]::-moz-range-track{
+      height:6px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+    }
+    input[type="range"]::-moz-range-progress{
+      height:6px;
+      border-radius:999px;
+      background:var(--accent);
+    }
+    input[type="range"]::-moz-range-thumb{
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      border:2px solid rgba(0,0,0,.35);
+      cursor:pointer;
+    }
+
+    .btns{display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;margin-top:16px;align-items:stretch}
+
+    button{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600
+    }
+    button:hover{background:rgba(255,255,255,.09)}
+
+    /* ✅ PDF 버튼 배경 #FF558F */
+    #dlPDF{
+      background:var(--accent);
+      border-color:rgba(255,255,255,.18);
+      color:#fff;
+    }
+    #dlPDF:hover{
+      filter:brightness(1.02);
+      background:var(--accent);
+    }
+
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+      margin-top:16px
+    }
+
+    .stage{
+      display:grid;
+      gap:16px;
+      align-content:start
+    }
+    .canvasWrap{
+      background:#000;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      overflow:auto
+    }
+    .canvasHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      color:var(--muted);
+      font-size:12px
+    }
+    canvas{
+      display:block;
+      margin:0 auto;
+      border-radius:10px;
+      background:#000
+    }
+    .tiny{
+      font-size:11px;
+      color:var(--muted)
+    }
+
+    /* ✅ Copyright footer: 하단 고정 + 센터 정렬 */
+    .panelFooter{
+      margin-top:auto;
+      padding-top:16px;
+      text-align:center;
+      color:rgba(255,255,255,.55);
+      font-size:12px;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>MAKESTAR 비표 머신 <span class="tiny">(v1 • DWARF)</span></h1>
+
+      <div class="row">
+        <label>아티스트 + 앨범명<span class="tiny">e.g. LE SSERAFIM 1st Single Album ‘SPAGHETTI’</span></label>
+        <textarea id="textA" rows="2">ArtistName AlbumFormat ‘AlbumName’</textarea>
+      </div>
+
+      <div class="row">
+        <label>이벤트 + 도시명<span class="tiny">e.g. OFFLINE EVENT IN WARSZAW</span></label>
+        <input id="textB" type="text" value="EventFormat IN CityName" />
+      </div>
+
+      <div class="row">
+        <label>행사일<span class="tiny">e.g. 2026.03.14</span></label>
+        <input id="textC" type="text" value="YYYY.MM.DD" />
+      </div>
+
+      <div class="row">
+        <label>역할</label>
+        <select id="role">
+          <option value="staff" selected>STAFF</option>
+          <option value="artist">ARTIST</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>이미지<span class="tiny">e.g. 컨셉포토, 앨범 이미지</span></label>
+        <input id="photo" type="file" accept="image/*" />
+      </div>
+
+      <div class="row">
+        <label>비율 설정 *정비율 <span id="scaleLabel" class="tiny">100%</span></label>
+        <input id="scale" type="range" min="50" max="200" value="100" />
+      </div>
+
+      <div class="btns">
+        <button id="reset">사진 위치/크기 초기화</button>
+        <button id="dlSinglePDF">단일 비표 PDF 다운로드</button>
+        <button id="dlPDF" class="accent">내부 출력용 비표 PDF *A4</button>
+      </div>
+
+      <div class="hint">
+        <div>• ✅ 93*124mm 사이즈, 내부 출력에 최적화된 비표 입니다</div>
+        <div>• 이미지를 드래그 해서 위치 조정 가능</div>
+      </div>
+
+      <div class="panelFooter">2026 MAKESTAR Inc. All Rights Reserved.</div>
+    </div>
+
+    <div class="stage">
+      <div class="canvasWrap">
+        <div class="canvasHead">
+          <div>미리보기 (비표 93×124mm)</div>
+          <div class="tiny">☜ 이미지를 드래그 해서 위치를 조정할 수 있습니다</div>
+        </div>
+        <canvas id="badgeCanvas"></canvas>
+      </div>
+
+      <div class="canvasWrap">
+        <div class="canvasHead">
+          <div>미리보기 (A4 2×2 + 재단선)</div>
+          <div class="tiny">☜ 다운로드 결과와 동일</div>
+        </div>
+        <canvas id="a4Canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+<script>
+/** ===========================
+ *  Logo SVG (항상 노출)
+ * =========================== */
+const SVG_LOGO = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.41 7.55">
+  <g fill="#fff">
+    <path d="M47.7,7.41c-.11,0-.16-.05-.16-.16V.3c0-.11.05-.16.16-.16h2.43c1.06,0,1.83.22,2.32.66s.73,1.09.73,1.95c0,.48-.08.89-.25,1.26-.17.36-.42.65-.75.87l1.21,2.34c.03.05.04.1,0,.14-.03.03-.07.05-.13.05h-1.69c-.09,0-.15-.04-.18-.12l-.92-1.93c-.11,0-.23,0-.35,0h-.76v1.88c0,.11-.05.16-.16.16h-1.51ZM50.09,1.68h-.73v2.14h.73c.38,0,.68-.08.88-.25.21-.17.32-.44.32-.82s-.11-.66-.32-.82c-.2-.17-.5-.25-.88-.25Z"/>
+    <path d="M39.88,7.41c-.06,0-.1-.02-.13-.05-.02-.04-.02-.08,0-.13l2.86-6.97c.03-.08.09-.12.18-.12h1.25c.09,0,.15.04.18.12l2.86,6.97s.02.09,0,.13c-.02.03-.06.05-.11.05h-1.66c-.09,0-.15-.04-.18-.13l-.4-1.12h-2.64l-.4,1.12c-.03.09-.09.13-.18.13h-1.62ZM42.61,4.66h1.58l-.8-2.24-.78,2.24Z"/>
+    <path d="M36.88,7.41c-.11,0-.16-.05-.16-.16V1.87h-2.09c-.1,0-.15-.05-.15-.15V.3c0-.11.05-.16.15-.16h6.02c.11,0,.16.05.16.16v1.43c0,.1-.05.15-.16.15h-2.08v5.38c0,.11-.05.16-.16.16h-1.54Z"/>
+    <path d="M31.67,7.55c-.69,0-1.27-.17-1.76-.5-.49-.34-.84-.82-1.04-1.44-.03-.1,0-.17.11-.2l1.38-.34c.09-.02.16.01.2.1.11.26.26.46.45.57.19.11.43.17.72.17.24,0,.43-.04.57-.12.15-.09.23-.21.23-.38,0-.18-.08-.33-.24-.44-.15-.11-.38-.22-.68-.33l-.75-.27c-.55-.19-1-.47-1.33-.83-.32-.36-.49-.82-.49-1.36,0-.44.12-.82.35-1.15.24-.33.55-.59.94-.77.4-.19.84-.29,1.32-.29.61,0,1.14.15,1.59.44.46.28.8.74,1,1.36.05.11.01.17-.1.2l-1.45.39c-.09.03-.16,0-.20-.1-.11-.26-.23-.43-.39-.52-.15-.09-.31-.14-.5-.14-.2,0-.36.04-.5.13-.13.09-.2.2-.2.36s.08.29.23.41c.15.11.41.23.78.36l.54.18c.65.22,1.13.51,1.45.86.32.35.48.83.48,1.43,0,.43-.12.81-.35,1.15-.23.33-.55.59-.96.78-.41.18-.88.28-1.42.28Z"/>
+    <path d="M23.62,7.41c-.11,0-.16-.05-.16-.16V.3c0-.11.05-.16.16-.16h4.78c.11,0,.16.05.16.16v1.28c0,.11-.05.16-.16.16h-3.11v1.19h2.74c.11,0,.16.05.16.16v1.23c0,.11-.05.16-.16.16h-2.74v1.35h3.23c.11,0,.16.05.16.16v1.28c0,.11-.05.16-.16.16h-4.9Z"/>
+    <path d="M16.57,7.41c-.11,0-.16-.05-.16-.16V.3c0-.11.05-.16.16-.16h1.54c.11,0,.16.05.16.16v2.81L20.62.23c.05-.06.12-.09.19-.09h1.75c.07,0,.11.02.12.06.02.03,0,.08-.03.13l-2.21,2.55,2.49,4.35c.03.05.04.1.02.14-.02.03-.06.05-.13.05h-1.77c-.08,0-.14-.04-.18-.11l-1.67-3-.93,1.07v1.88c0,.11-.05.16-.16.16h-1.54Z"/>
+    <path d="M8.75,7.41c-.06,0-.1-.02-.13-.05-.02-.04-.02-.08,0-.13L11.49.26c.03-.08.09-.12.18-.12h1.25c.09,0,.15.04.18.12l2.86,6.97s.02.09,0,.13c-.02.03-.06.05-.11.05h-1.66c-.09,0-.15-.04-.18-.13l-.4-1.12h-2.64l-.4,1.12c-.03.09-.09.13-.18.13h-1.62ZM11.48,4.66h1.58l-.8-2.24-.78,2.24Z"/>
+    <path d="M.16,7.41c-.11,0-.16-.05-.16-.16V.3c0-.11.05-.16.16-.16h1.6c.09,0,.15.04.18.11l2.19,3.65L6.26.25c.04-.07.10-.11.18-.11h1.57c.11,0,.16.05.16.16v6.95c0,.11-.05.16-.16.16h-1.46c-.11,0-.16-.05-.16-.16V3.12l-2.27,3.77L1.77,3.19v4.06c0,.11-.05.16-.16.16H.16Z"/>
+  </g>
+</svg>`;
+
+function svgToDataUrl(svgText){
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
+}
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    img.decoding="async";
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error("Image load failed"));
+    img.src=src;
+  });
+}
+
+/** ===========================
+ *  출력 규격
+ * =========================== */
+const DPI = 300;
+const PX_PER_MM = DPI / 25.4;
+
+// Badge size
+const BADGE_W_MM = 93;
+const BADGE_H_MM = 124;
+const MLR_MM = 6;
+const PHOTO_H_MM = 56;
+
+const BADGE_W = Math.round(BADGE_W_MM * PX_PER_MM);
+const BADGE_H = Math.round(BADGE_H_MM * PX_PER_MM);
+const MLR = Math.round(MLR_MM * PX_PER_MM);
+const CONTENT_W = BADGE_W - 2 * MLR;
+const PHOTO_H = Math.round(PHOTO_H_MM * PX_PER_MM);
+
+// A4 300dpi
+const A4_W = 2480;
+const A4_H = 3508;
+
+/** 레이아웃 */
+const LAYOUT = {
+  textA_bottomY: 159,
+  textB_centerY: 220,
+  role_centerY: 395,
+  date_centerY: 555,
+  photo_topY: 629,
+  logo_centerY: 1366,
+};
+
+let CURRENT_PHOTO_RECT = { x: MLR, y: LAYOUT.photo_topY, w: CONTENT_W, h: PHOTO_H };
+
+// ROLE 박스
+const ROLE_BOX = { w: Math.round(CONTENT_W * 0.98), h: 250, x: 0, y: 0 };
+ROLE_BOX.x = Math.round((BADGE_W - ROLE_BOX.w) / 2);
+// ROLE_BOX.y 는 텍스트A 줄수(1/2줄)에 따른 shift를 반영해 drawRoleText()에서 매 렌더마다 갱신합니다.
+const ROLE_PADDING_RATIO = 0.035;
+const ROLE_TRACKING_EM = 0.018;
+
+let logoImg = null;
+const LOGO_W = Math.round(CONTENT_W * 0.22);
+
+// 재단선 0.5mm
+const CUTLINE_MM = 0.5;
+const CUTLINE_PX = Math.max(1, Math.round(CUTLINE_MM * PX_PER_MM));
+
+/** 텍스트 유틸 */
+function setFont(ctx, sizePx, weight=700){
+  ctx.font = `${weight} ${sizePx}px Pretendard, system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+}
+
+function mm2px(mm){ return mm * PX_PER_MM; }
+
+function bboxHeight(ctx, text){
+  const m = ctx.measureText(text || "Hg");
+  const a = (m.actualBoundingBoxAscent ?? 0);
+  const d = (m.actualBoundingBoxDescent ?? 0);
+  const h = a + d;
+  if(h > 0) return h;
+  const px = parseFloat((ctx.font.match(/\s(\d+(?:\.\d+)?)px\s/)||[])[1] || "0");
+  return px || 0;
+}
+function fitFontPxToBBoxHeight(ctx, text, targetHpx, weight=700, basePx=64){
+  setFont(ctx, basePx, weight);
+  const h = bboxHeight(ctx, text);
+  if(!h) return basePx;
+  return basePx * (targetHpx / h);
+}
+function baselineForBBoxBottom(ctx, text, bottomY){
+  const m = ctx.measureText(text || "Hg");
+  const d = (m.actualBoundingBoxDescent ?? 0);
+  return bottomY - d;
+}
+function baselineForBBoxCenter(ctx, text, centerY){
+  const m = ctx.measureText(text || "Hg");
+  const a = (m.actualBoundingBoxAscent ?? 0);
+  const d = (m.actualBoundingBoxDescent ?? 0);
+  return centerY + (a - d)/2;
+}
+function measureTracking(ctx, text, trackingPx){
+  let w=0;
+  for(let i=0;i<text.length;i++){
+    w += ctx.measureText(text[i]).width;
+    if(i !== text.length-1) w += trackingPx;
+  }
+  return w;
+}
+function drawTextTracking(ctx, text, x, y, align="center", trackingPx=0){
+  const w = measureTracking(ctx, text, trackingPx);
+  let startX = x - w/2;
+  if(align === "left") startX = x;
+  if(align === "right") startX = x - w;
+  let cursor = startX;
+  for(let i=0;i<text.length;i++){
+    ctx.fillText(text[i], cursor, y);
+    cursor += ctx.measureText(text[i]).width + trackingPx;
+  }
+}
+function wrapText(ctx, text, maxWidth, trackingPx=0){
+  const words = (text||"").split(/\s+/).filter(Boolean);
+  const lines=[];
+  let cur="";
+  const fits=(str)=>measureTracking(ctx,str,trackingPx) <= maxWidth;
+  for(const w of words){
+    const next = cur ? (cur+" "+w) : w;
+    if(fits(next)) cur = next;
+    else{
+      if(cur) lines.push(cur);
+      cur = w;
+    }
+  }
+  if(cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+// Enter(줄바꿈)을 우선 반영하고, 각 줄은 폭을 넘기면 자동 줄바꿈
+function wrapTextWithNewlines(ctx, text, maxWidth, trackingPx=0){
+  // Preserve explicit newlines (including empty lines).
+  // This ensures pressing Enter immediately creates a line break, like previous versions.
+  const raw = (text||"").replace(/\r/g,"");
+  const parts = raw.split(/\n/); // keep empty segments
+  const out = [];
+
+  for(const part of parts){
+    // If the user intentionally inserted a blank line, keep it as an explicit break.
+    if(part.trim().length === 0){
+      out.push("");
+      continue;
+    }
+    const wrapped = wrapText(ctx, part, maxWidth, trackingPx);
+    out.push(...wrapped);
+  }
+
+  return out.length ? out : [""];
+}
+
+function insetBox(box, ratio){
+  const px = box.w * ratio;
+  const py = box.h * ratio;
+  return { x: box.x + px, y: box.y + py, w: box.w - px*2, h: box.h - py*2 };
+}
+
+/** ROLE 텍스트 */
+function fitRoleSize(ctx, text, box, trackingEm, weight){
+  let lo = 10, hi = 900, best = 10;
+  while(lo <= hi){
+    const mid = Math.floor((lo+hi)/2);
+    setFont(ctx, mid, weight);
+    const tpx = mid * trackingEm;
+    const w = measureTracking(ctx, text, tpx);
+    const h = mid;
+    if(w <= box.w && h <= box.h){ best = mid; lo = mid + 1; }
+    else { hi = mid - 1; }
+  }
+  return best;
+}
+function drawRoleText(ctx, role, roleCenterY){
+  const text = role === "artist" ? "ARTIST" : "STAFF";
+
+  // 텍스트A 줄 수에 따른 shift 반영
+  ROLE_BOX.y = Math.round(roleCenterY - ROLE_BOX.h / 2);
+
+  const box = insetBox(ROLE_BOX, ROLE_PADDING_RATIO);
+
+  ctx.save();
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textBaseline = "middle";
+  const size = fitRoleSize(ctx, text, box, ROLE_TRACKING_EM, 900);
+  setFont(ctx, size, 900);
+  const trackingPx = size * ROLE_TRACKING_EM;
+
+  drawTextTracking(ctx, text, box.x + box.w/2, box.y + box.h/2, "center", trackingPx);
+  ctx.restore();
+}
+
+/** 사진 상태 */
+const photoState = {
+  img:null,
+  userScale:1.0,
+  baseScale:1.0,
+  offsetX:0,
+  offsetY:0,
+  dragging:false,
+  lastX:0,
+  lastY:0
+};
+
+/** 로고 안전 로딩 */
+async function initAssetsSafely(){
+  try{
+    logoImg = await loadImage(svgToDataUrl(SVG_LOGO));
+  }catch(e){
+    console.warn("[Logo] load failed. Continue without logo.", e);
+    logoImg = null;
+  }
+}
+
+/** Badge */
+function drawBadge(ctx, data, opts = {}){
+  ctx.save();
+
+  // BG
+  ctx.fillStyle="#000";
+  ctx.fillRect(0,0,BADGE_W,BADGE_H);
+
+  const cx = BADGE_W/2;
+  ctx.fillStyle="#fff";
+
+  // Text A (레퍼런스 기준: 폰트 높이/바닥선 고정, 1~2줄 지원)
+  const TARGET_TEXTA_H_PX = mm2px(2.55); // Ref @4x 기준
+  let sizeA = fitFontPxToBBoxHeight(ctx, data.textA, TARGET_TEXTA_H_PX, 700, 64);
+
+  let trackingA = sizeA * 0.016;
+  let linesA = [];
+
+  const MIN_A = mm2px(1.30);
+  while(sizeA >= MIN_A){
+    setFont(ctx, sizeA, 700);
+    trackingA = sizeA * 0.016;
+    linesA = wrapTextWithNewlines(ctx, data.textA, CONTENT_W, trackingA);
+    if(linesA.length <= 2) break;
+    sizeA -= 0.5;
+  }
+  const lhA = Math.round(sizeA * 1.35);
+
+  setFont(ctx, sizeA, 700);
+  ctx.textBaseline="alphabetic";
+
+  const bottomY = LAYOUT.textA_bottomY;
+  if(linesA.length === 1){
+    const y = baselineForBBoxBottom(ctx, linesA[0], bottomY);
+    drawTextTracking(ctx, linesA[0], cx, y, "center", trackingA);
+  }else{
+    const y2 = baselineForBBoxBottom(ctx, linesA[1], bottomY);
+    const y1 = y2 - lhA;
+    drawTextTracking(ctx, linesA[0], cx, y1, "center", trackingA);
+    drawTextTracking(ctx, linesA[1], cx, y2, "center", trackingA);
+  }
+
+  // 레퍼런스 방식: Text A는 위로만 확장, 아래 요소는 고정
+  const yTextB = LAYOUT.textB_centerY;
+  const yRole  = LAYOUT.role_centerY;
+  const yDate  = LAYOUT.date_centerY;
+  const yPhoto = LAYOUT.photo_topY;
+  const yLogo  = LAYOUT.logo_centerY;
+
+  // 현재 렌더 기준 사진 영역(드래그/클립에 사용)
+  const CONTENT_X = Math.round((BADGE_W - CONTENT_W)/2);
+  CURRENT_PHOTO_RECT = { x: CONTENT_X, y: yPhoto, w: CONTENT_W, h: PHOTO_H };
+
+  // 이동해도 커버 스케일이 유지되도록 매 렌더마다 baseScale 갱신
+  photoState.baseScale = photoState.img
+    ? Math.max(CURRENT_PHOTO_RECT.w / photoState.img.width, CURRENT_PHOTO_RECT.h / photoState.img.height)
+    : 1.0;
+
+// Text B (레퍼런스 기준: 박스 높이/센터 정렬)
+  const TARGET_TEXTB_H_PX = mm2px(4.75); // Ref @4x 기준 (70×105)
+  let sizeB = fitFontPxToBBoxHeight(ctx, data.textB, TARGET_TEXTB_H_PX, 800, 96);
+
+  // 폭이 아주 타이트한 경우에만 추가 축소
+  while(sizeB > mm2px(2.2)){
+    setFont(ctx, sizeB, 800);
+    if(measureTracking(ctx, data.textB, sizeB*0.016) <= CONTENT_W) break;
+    sizeB -= 0.5;
+  }
+
+  setFont(ctx, sizeB, 800);
+  ctx.textBaseline="alphabetic";
+  const yB = baselineForBBoxCenter(ctx, data.textB, yTextB);
+  drawTextTracking(ctx, data.textB, cx, yB, "center", sizeB*0.016);
+
+  // Role
+  drawRoleText(ctx, data.role, yRole);
+
+  // Text C
+  const sizeC = Math.round(13 * DPI / 72);
+  setFont(ctx, sizeC, 700);
+  ctx.textBaseline="middle";
+  drawTextTracking(ctx, data.textC, cx, yDate, "center", sizeC*0.016);
+
+    // PHOTO BG (미리보기만 #FFBF00, 아래 미리보기/산출물은 배경색(#000))
+    const photoBg = opts.preview ? "#FFBF00" : "#000";
+  ctx.fillStyle = photoBg;
+  ctx.fillRect(CURRENT_PHOTO_RECT.x, CURRENT_PHOTO_RECT.y, CURRENT_PHOTO_RECT.w, CURRENT_PHOTO_RECT.h);
+
+/** PHOTO: 테두리/프린지 제거 */
+  const CLIP_PAD = 2;
+  const OVERSCAN = 1.02;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(
+    CURRENT_PHOTO_RECT.x - CLIP_PAD,
+    CURRENT_PHOTO_RECT.y - CLIP_PAD,
+    CURRENT_PHOTO_RECT.w + CLIP_PAD*2,
+    CURRENT_PHOTO_RECT.h + CLIP_PAD*2
+  );
+  ctx.clip();
+
+  if(photoState.img){
+    const img = photoState.img;
+    const cover = photoState.baseScale * photoState.userScale * OVERSCAN;
+    const drawW = img.width * cover;
+    const drawH = img.height * cover;
+
+    const centerX = CURRENT_PHOTO_RECT.x + CURRENT_PHOTO_RECT.w/2 + photoState.offsetX;
+    const centerY = CURRENT_PHOTO_RECT.y + CURRENT_PHOTO_RECT.h/2 + photoState.offsetY;
+
+    ctx.drawImage(img, centerX - drawW/2, centerY - drawH/2, drawW, drawH);
+  }
+  ctx.restore();
+
+  // Logo
+  if(logoImg){
+    const logoW = LOGO_W;
+    const logoH = logoW * (logoImg.height / logoImg.width);
+    const logoX = cx - logoW/2;
+    const logoY = yLogo - logoH/2;
+    ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+  }
+
+  ctx.restore();
+}
+
+/** A4 */
+function drawA4(ctxA4, badgeBitmapCanvas){
+  ctxA4.save();
+
+  ctxA4.fillStyle="#fff";
+  ctxA4.fillRect(0,0,A4_W,A4_H);
+
+  const GAP = CUTLINE_PX;
+
+  const totalW = BADGE_W*2 + GAP;
+  const totalH = BADGE_H*2 + GAP;
+
+  const startX = Math.floor((A4_W - totalW)/2);
+  const startY = Math.floor((A4_H - totalH)/2);
+
+  const x1 = startX;
+  const x2 = startX + BADGE_W + GAP;
+  const y1 = startY;
+  const y2 = startY + BADGE_H + GAP;
+
+  ctxA4.drawImage(badgeBitmapCanvas, x1, y1);
+  ctxA4.drawImage(badgeBitmapCanvas, x2, y1);
+  ctxA4.drawImage(badgeBitmapCanvas, x1, y2);
+  ctxA4.drawImage(badgeBitmapCanvas, x2, y2);
+
+  // 중앙 재단선(검정) A4 전체
+  ctxA4.fillStyle="#000";
+  const vx = startX + BADGE_W;
+  const hy = startY + BADGE_H;
+  ctxA4.fillRect(vx, 0, GAP, A4_H);
+  ctxA4.fillRect(0, hy, A4_W, GAP);
+
+  ctxA4.restore();
+}
+
+/** UI */
+const badgeCanvas = document.getElementById("badgeCanvas");
+const a4Canvas = document.getElementById("a4Canvas");
+
+const textAEl = document.getElementById("textA");
+const textBEl = document.getElementById("textB");
+const textCEl = document.getElementById("textC");
+const roleEl  = document.getElementById("role");
+
+const photoEl = document.getElementById("photo");
+const scaleEl = document.getElementById("scale");
+const scaleLabel = document.getElementById("scaleLabel");
+
+const resetBtn = document.getElementById("reset");
+const dlSinglePDFBtn = document.getElementById("dlSinglePDF");
+const dlPDFBtn = document.getElementById("dlPDF");
+
+badgeCanvas.width = BADGE_W;
+badgeCanvas.height = BADGE_H;
+badgeCanvas.style.width = "360px";
+badgeCanvas.style.height = (360 * BADGE_H / BADGE_W) + "px";
+
+a4Canvas.width = A4_W;
+a4Canvas.height = A4_H;
+a4Canvas.style.width = "600px";
+a4Canvas.style.height = (600 * A4_H / A4_W) + "px";
+
+const badgeCtx = badgeCanvas.getContext("2d",{alpha:false});
+const a4Ctx = a4Canvas.getContext("2d",{alpha:false});
+
+function currentData(){
+  return {
+    textA: textAEl.value.trim(),
+    textB: textBEl.value.trim(),
+    textC: textCEl.value.trim(),
+    role: roleEl.value
+  };
+}
+
+/* ✅ Slider 채움 퍼센트 변수 세팅 */
+function updateRangeFill(){
+  const min = Number(scaleEl.min);
+  const max = Number(scaleEl.max);
+  const val = Number(scaleEl.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  scaleEl.style.setProperty("--range-fill", pct + "%");
+}
+
+function renderAll(){
+  const d = currentData();
+
+  drawBadge(badgeCtx, d, { preview: true });
+
+  const off = document.createElement("canvas");
+  off.width = BADGE_W;
+  off.height = BADGE_H;
+  const offCtx = off.getContext("2d",{alpha:false});
+  drawBadge(offCtx, d, { preview: false });
+
+  drawA4(a4Ctx, off);
+}
+
+function resetPhoto(){
+  photoState.userScale = 1.0;
+  photoState.offsetX = 0;
+  photoState.offsetY = 0;
+  scaleEl.value = "100";
+  scaleLabel.textContent = "100%";
+  updateRangeFill();
+}
+
+function withinPhotoArea(x,y){
+  return x>=CURRENT_PHOTO_RECT.x && x<=CURRENT_PHOTO_RECT.x+CURRENT_PHOTO_RECT.w &&
+         y>=CURRENT_PHOTO_RECT.y && y<=CURRENT_PHOTO_RECT.y+CURRENT_PHOTO_RECT.h;
+}
+function canvasToBadgeCoords(evt){
+  const rect = badgeCanvas.getBoundingClientRect();
+  const sx = BADGE_W / rect.width;
+  const sy = BADGE_H / rect.height;
+  return { x:(evt.clientX-rect.left)*sx, y:(evt.clientY-rect.top)*sy };
+}
+
+// drag photo
+badgeCanvas.addEventListener("pointerdown",(e)=>{
+  if(!photoState.img) return;
+  const {x,y} = canvasToBadgeCoords(e);
+  if(!withinPhotoArea(x,y)) return;
+  photoState.dragging=true;
+  photoState.lastX=x;
+  photoState.lastY=y;
+  badgeCanvas.setPointerCapture(e.pointerId);
+});
+badgeCanvas.addEventListener("pointermove",(e)=>{
+  if(!photoState.dragging) return;
+  const {x,y} = canvasToBadgeCoords(e);
+  photoState.offsetX += (x - photoState.lastX);
+  photoState.offsetY += (y - photoState.lastY);
+  photoState.lastX = x;
+  photoState.lastY = y;
+  renderAll();
+});
+badgeCanvas.addEventListener("pointerup",()=>photoState.dragging=false);
+badgeCanvas.addEventListener("pointercancel",()=>photoState.dragging=false);
+
+// input events
+[textAEl,textBEl,textCEl,roleEl].forEach(el=>{
+  el.addEventListener("input",renderAll);
+  el.addEventListener("change",renderAll);
+});
+
+// scale
+scaleEl.addEventListener("input",()=>{
+  const v = Number(scaleEl.value);
+  scaleLabel.textContent = v + "%";
+  photoState.userScale = v/100;
+  updateRangeFill();
+  renderAll();
+});
+
+// upload
+photoEl.addEventListener("change", async ()=>{
+  const file = photoEl.files?.[0];
+  if(!file) return;
+
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await loadImage(url);
+    photoState.img = img;
+    photoState.baseScale = Math.max(CURRENT_PHOTO_RECT.w/img.width, CURRENT_PHOTO_RECT.h/img.height);
+  }catch(e){
+    alert("이미지 로딩에 실패했어요. 다른 이미지를 시도해 주세요.");
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+
+  resetPhoto();
+  renderAll();
+});
+
+// reset
+resetBtn.addEventListener("click",()=>{
+  resetPhoto();
+  renderAll();
+});
+
+function sanitizeFilename(name){
+  const base = (name || "PASS").replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim();
+  return base.length ? base.slice(0,80) : "PASS";
+}
+
+// 단일 비표 PDF 다운로드
+async function downloadSingleBadgePDF(){
+  const jspdfNS = window.jspdf;
+  if(!jspdfNS || !jspdfNS.jsPDF){
+    alert("PDF 라이브러리(jsPDF)가 아직 로드되지 않았어요. 새로고침 후 다시 시도해 주세요.");
+    return;
+  }
+  const { jsPDF } = jspdfNS;
+  const d = currentData();
+
+  const off = document.createElement("canvas");
+  off.width = BADGE_W;
+  off.height = BADGE_H;
+  const offCtx = off.getContext("2d",{alpha:false});
+  drawBadge(offCtx, d, { preview:false });
+
+  const imgData = off.toDataURL("image/png");
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [BADGE_W_MM, BADGE_H_MM],
+    compress: true
+  });
+  pdf.addImage(imgData, "PNG", 0, 0, BADGE_W_MM, BADGE_H_MM, undefined, "FAST");
+  const name = sanitizeFilename(d.textA);
+  pdf.save(`${name}_Pass_${BADGE_W_MM}-${BADGE_H_MM}.pdf`);
+}
+dlSinglePDFBtn.addEventListener("click", downloadSingleBadgePDF);
+
+// download PDF
+async function downloadA4PDF(){
+  const jspdfNS = window.jspdf;
+  if(!jspdfNS || !jspdfNS.jsPDF){
+    alert("PDF 라이브러리(jsPDF)가 아직 로드되지 않았어요. 새로고침 후 다시 시도해 주세요.");
+    return;
+  }
+  const { jsPDF } = jspdfNS;
+
+  const imgData = a4Canvas.toDataURL("image/png");
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true
+  });
+
+  pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
+  const name = sanitizeFilename(currentData().textA);
+  pdf.save(`${name}_Pass_${BADGE_W_MM}-${BADGE_H_MM}_A4.pdf`);
+}
+dlPDFBtn.addEventListener("click", downloadA4PDF);
+
+/** Boot */
+(async function boot(){
+  updateRangeFill();
+  renderAll();
+
+  try{
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  }catch(e){}
+
+  await initAssetsSafely();
+  renderAll();
+})();
+</script>
+</body>
+</html>
