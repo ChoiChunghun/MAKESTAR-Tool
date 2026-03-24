@@ -240,7 +240,7 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
 
       <div class="row">
         <label>이벤트 + 도시명<span class="tiny">e.g. OFFLINE EVENT IN WARSZAW</span></label>
-        <input id="textB" type="text" value="EventFormat IN CityName" />
+        <textarea id="textB" rows="2">EventFormat IN CityName</textarea>
       </div>
 
       <div class="row">
@@ -253,6 +253,9 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
         <select id="role">
           <option value="staff" selected>STAFF</option>
           <option value="artist">ARTIST</option>
+          <option value="vip">VIP</option>
+          <option value="aaa">AAA</option>
+          <option value="team">TEAM</option>
         </select>
       </div>
 
@@ -300,6 +303,27 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
   </div>
 
 <script>
+  window.PASS_MACHINE_CONFIG = {
+    badgeWmm: 70,
+    badgeHmm: 105,
+    previewCanvasWidth: 360,
+    a4CanvasWidth: 600,
+    contentRect: { x: 59, w: 709 },
+    photoRect: { x: 59, y: 565, w: 709, h: 531 },
+    roleArea: { x: 61, w: 706 },
+    dateBox: { x: 257, y: 480, w: 314, h: 42 },
+    logoBox: { x: 322, y: 1127, w: 183, h: 26 },
+    states: {
+      A: { textA: [{ y: 128, h: 26 }], textB: [{ y: 177, h: 39 }], role: { y: 278, h: 153 } },
+      B: { textA: [{ y: 86, h: 27 }, { y: 123, h: 27 }], textB: [{ y: 177, h: 39 }], role: { y: 278, h: 153 } },
+      C: { textA: [{ y: 86, h: 27 }], textB: [{ y: 140, h: 39 }, { y: 198, h: 39 }], role: { y: 278, h: 153 } },
+      D: { textA: [{ y: 75, h: 27 }, { y: 112, h: 27 }], textB: [{ y: 165, h: 36 }, { y: 219, h: 36 }], role: { y: 291, h: 152 } }
+    }
+  };
+</script>
+<script src="pass-machine.js"></script>
+<script>
+if (!window.__PASS_MACHINE_BOOTED__) {
 /** ===========================
  *  Logo SVG (항상 노출)
  * =========================== */
@@ -907,6 +931,7 @@ dlPDFBtn.addEventListener("click", downloadA4PDF);
   await initAssetsSafely();
   renderAll();
 })();
+}
 </script>
 </body>
 </html>

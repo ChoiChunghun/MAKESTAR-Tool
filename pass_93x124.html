@@ -240,7 +240,7 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
 
       <div class="row">
         <label>이벤트 + 도시명<span class="tiny">e.g. OFFLINE EVENT IN WARSZAW</span></label>
-        <input id="textB" type="text" value="EventFormat IN CityName" />
+        <textarea id="textB" rows="2">EventFormat IN CityName</textarea>
       </div>
 
       <div class="row">
@@ -253,6 +253,9 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
         <select id="role">
           <option value="staff" selected>STAFF</option>
           <option value="artist">ARTIST</option>
+          <option value="vip">VIP</option>
+          <option value="aaa">AAA</option>
+          <option value="team">TEAM</option>
         </select>
       </div>
 
@@ -300,6 +303,27 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
   </div>
 
 <script>
+  window.PASS_MACHINE_CONFIG = {
+    badgeWmm: 93,
+    badgeHmm: 124,
+    previewCanvasWidth: 360,
+    a4CanvasWidth: 600,
+    contentRect: { x: 71, w: 957 },
+    photoRect: { x: 71, y: 629, w: 957, h: 661 },
+    roleArea: { x: 127, w: 847 },
+    dateBox: { x: 370, y: 531, w: 360, h: 48 },
+    logoBox: { x: 438, y: 1350, w: 223, h: 32 },
+    states: {
+      A: { textA: [{ y: 128, h: 39 }], textB: [{ y: 191, h: 45 }], role: { y: 302, h: 169 } },
+      B: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 191, h: 45 }], role: { y: 302, h: 169 } },
+      C: { textA: [{ y: 83, h: 38 }], textB: [{ y: 145, h: 45 }, { y: 211, h: 45 }], role: { y: 302, h: 169 } },
+      D: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 189, h: 42 }, { y: 252, h: 42 }], role: { y: 334, h: 170 } }
+    }
+  };
+</script>
+<script src="pass-machine.js"></script>
+<script>
+if (!window.__PASS_MACHINE_BOOTED__) {
 /** ===========================
  *  Logo SVG (항상 노출)
  * =========================== */
@@ -905,6 +929,7 @@ dlPDFBtn.addEventListener("click", downloadA4PDF);
   await initAssetsSafely();
   renderAll();
 })();
+}
 </script>
 </body>
 </html>
