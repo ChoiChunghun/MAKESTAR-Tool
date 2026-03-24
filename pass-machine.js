@@ -26,9 +26,9 @@
   const ROLE_TRACKING_EM = 0.018;
   const TEXT_STYLE_DEFAULTS = {
     textA: {
-      fontScale: 0.8,
+      fontScale: 1,
       trackingEm: TEXT_TRACKING_EM,
-      verticalShift: -2
+      verticalShift: 0
     },
     textB: {
       fontScale: 1,
@@ -374,6 +374,70 @@
     let logoImg = null;
     let currentPhotoRect = { ...photoRect };
 
+    function applyPreviewMode(){
+      if(typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      if(params.get("mode") !== "badge-only") return;
+
+      const panelEl = document.querySelector(".panel");
+      const wrapEl = document.querySelector(".wrap");
+      const stageEl = document.querySelector(".stage");
+      const canvasWraps = document.querySelectorAll(".canvasWrap");
+
+      if(panelEl) panelEl.style.display = "none";
+      if(wrapEl){
+        wrapEl.style.display = "block";
+        wrapEl.style.padding = "0";
+        wrapEl.style.maxWidth = "none";
+      }
+      if(stageEl){
+        stageEl.style.display = "block";
+        stageEl.style.padding = "0";
+      }
+      canvasWraps.forEach((canvasWrap, index) => {
+        canvasWrap.style.background = "transparent";
+        canvasWrap.style.border = "0";
+        canvasWrap.style.borderRadius = "0";
+        canvasWrap.style.padding = "0";
+        canvasWrap.style.margin = "0";
+        if(index > 0){
+          canvasWrap.style.display = "none";
+        }
+      });
+
+      const canvasHeadEl = document.querySelector(".canvasHead");
+      if(canvasHeadEl) canvasHeadEl.style.display = "none";
+
+      document.body.style.margin = "0";
+      document.body.style.background = "#ff00ff";
+    }
+
+    function applyUrlOverrides(){
+      if(typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      const textA = params.get("textA");
+      const textB = params.get("textB");
+      const textC = params.get("textC");
+      const role = params.get("role");
+      const scale = params.get("scale");
+
+      if(textA !== null) textAEl.value = textA;
+      if(textB !== null) textBEl.value = textB;
+      if(textC !== null) textCEl.value = textC;
+      if(role !== null && ROLE_LABELS[role]) roleEl.value = role;
+      if(scale !== null){
+        const numericScale = Number(scale);
+        if(Number.isFinite(numericScale)){
+          const min = Number(scaleEl.min);
+          const max = Number(scaleEl.max);
+          const clamped = Math.min(max, Math.max(min, numericScale));
+          scaleEl.value = String(clamped);
+          scaleLabel.textContent = `${clamped}%`;
+          photoState.userScale = clamped / 100;
+        }
+      }
+    }
+
     function currentData(){
       return {
         textA: textAEl.value.trim(),
@@ -426,6 +490,16 @@
     function drawBadge(ctx, data, opts){
       const stateKey = resolveStateKey(ctx, data);
       const state = config.states[stateKey];
+      const stateTextStyles = {
+        textA: {
+          ...textStyles.textA,
+          ...(state.textStyles?.textA || {})
+        },
+        textB: {
+          ...textStyles.textB,
+          ...(state.textStyles?.textB || {})
+        }
+      };
       const textABoxes = expandBoxes(state.textA, contentRect.x, contentRect.w);
       const textBBoxes = expandBoxes(state.textB, contentRect.x, contentRect.w);
       const roleBox = {
@@ -441,8 +515,8 @@
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, BADGE_W, BADGE_H);
 
-      drawTextBlock(ctx, data.textA, textABoxes, 700, contentRect.w, 6, lineProbe.textA, textStyles.textA);
-      drawTextBlock(ctx, data.textB, textBBoxes, 800, contentRect.w, 6, lineProbe.textB, textStyles.textB);
+      drawTextBlock(ctx, data.textA, textABoxes, 700, contentRect.w, 6, lineProbe.textA, stateTextStyles.textA);
+      drawTextBlock(ctx, data.textB, textBBoxes, 800, contentRect.w, 6, lineProbe.textB, stateTextStyles.textB);
       drawRole(ctx, data.role, roleBox);
       drawDate(ctx, data.textC);
 
@@ -680,6 +754,8 @@
     dlPDFBtn.addEventListener("click", downloadA4PDF);
 
     (async function init(){
+      applyPreviewMode();
+      applyUrlOverrides();
       updateRangeFill();
       renderAll();
 

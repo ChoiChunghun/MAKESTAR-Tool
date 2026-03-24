@@ -313,11 +313,15 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
     roleArea: { x: 127, w: 847 },
     dateBox: { x: 370, y: 531, w: 360, h: 48 },
     logoBox: { x: 438, y: 1350, w: 223, h: 32 },
+    textStyles: {
+      textA: { fontScale: 0.92, trackingEm: 0.012, verticalShift: 1 },
+      textB: { fontScale: 0.96 }
+    },
     states: {
       A: { textA: [{ y: 128, h: 39 }], textB: [{ y: 191, h: 45 }], role: { y: 302, h: 169 } },
-      B: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 191, h: 45 }], role: { y: 302, h: 169 } },
-      C: { textA: [{ y: 83, h: 38 }], textB: [{ y: 145, h: 45 }, { y: 211, h: 45 }], role: { y: 302, h: 169 } },
-      D: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 189, h: 42 }, { y: 252, h: 42 }], role: { y: 334, h: 170 } }
+      B: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 191, h: 45 }], role: { y: 302, h: 169 }, textStyles: { textA: { verticalShift: 4 } } },
+      C: { textA: [{ y: 83, h: 38 }], textB: [{ y: 145, h: 45 }, { y: 211, h: 45 }], role: { y: 302, h: 169 }, textStyles: { textB: { verticalShift: 5 } } },
+      D: { textA: [{ y: 83, h: 38 }, { y: 128, h: 39 }], textB: [{ y: 189, h: 42 }, { y: 252, h: 42 }], role: { y: 334, h: 170 }, textStyles: { textA: { verticalShift: 4 }, textB: { verticalShift: 5 } } }
     }
   };
 </script>
