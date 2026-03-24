@@ -24,6 +24,18 @@
 
   const TEXT_TRACKING_EM = 0.016;
   const ROLE_TRACKING_EM = 0.018;
+  const TEXT_STYLE_DEFAULTS = {
+    textA: {
+      fontScale: 0.8,
+      trackingEm: TEXT_TRACKING_EM,
+      verticalShift: -2
+    },
+    textB: {
+      fontScale: 1,
+      trackingEm: TEXT_TRACKING_EM,
+      verticalShift: 0
+    }
+  };
 
   function svgToDataUrl(svgText){
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
@@ -173,11 +185,21 @@
     return { size, trackingPx };
   }
 
-  function inferLineCount(ctx, text, targetHeight, weight, maxWidth){
+  function inferLineCount(ctx, text, targetHeight, weight, maxWidth, style){
+    const resolvedStyle = {
+      ...TEXT_STYLE_DEFAULTS.textB,
+      ...(style || {})
+    };
     const sample = normalizeMultiline(text).replace(/\n+/g, " ").trim() || "Hg";
-    const size = fitFontPxToBBoxHeight(ctx, sample, targetHeight, weight, Math.max(targetHeight * 2, 64));
+    const size = fitFontPxToBBoxHeight(
+      ctx,
+      sample,
+      targetHeight * resolvedStyle.fontScale,
+      weight,
+      Math.max(targetHeight * 2, 64)
+    );
     setFont(ctx, size, weight);
-    const trackingPx = size * TEXT_TRACKING_EM;
+    const trackingPx = size * resolvedStyle.trackingEm;
     return Math.max(1, Math.min(2, wrapTextWithNewlines(ctx, text, maxWidth, trackingPx, 2).length));
   }
 
@@ -190,19 +212,47 @@
     }));
   }
 
-  function drawTextBlock(ctx, text, boxes, weight, maxWidth, minPx, probeHeight){
+  function resolveLineCenters(boxes, lineCount, gapScale, verticalShift){
+    const centers = boxes.map((box) => box.y + box.h / 2 + verticalShift);
+    if(lineCount <= 1){
+      const first = centers[0];
+      const last = centers[centers.length - 1];
+      return [(first + last) / 2];
+    }
+    const first = centers[0];
+    const last = centers[lineCount - 1];
+    const anchorCenter = (first + last) / 2;
+    const baseStep = lineCount > 1 ? (last - first) / (lineCount - 1) : 0;
+    const step = baseStep * gapScale;
+    return Array.from({ length: lineCount }, (_, index) => (
+      anchorCenter + (index - (lineCount - 1) / 2) * step
+    ));
+  }
+
+  function drawTextBlock(ctx, text, boxes, weight, maxWidth, minPx, probeHeight, style){
+    const resolvedStyle = {
+      ...TEXT_STYLE_DEFAULTS.textB,
+      ...(style || {})
+    };
     const sample = normalizeMultiline(text).replace(/\n+/g, " ").trim() || "Hg";
     const targetHeight = Math.min(...boxes.map((box) => box.h));
     const startHeight = boxes.length > 1 ? Math.max(probeHeight || targetHeight, targetHeight) : targetHeight;
-    let size = fitFontPxToBBoxHeight(ctx, sample, startHeight, weight, Math.max(startHeight * 2, 64));
-    let trackingPx = size * TEXT_TRACKING_EM;
+    const referenceSize = fitFontPxToBBoxHeight(
+      ctx,
+      sample,
+      startHeight * resolvedStyle.fontScale,
+      weight,
+      Math.max(startHeight * 2, 64)
+    );
+    let size = referenceSize;
+    let trackingPx = size * resolvedStyle.trackingEm;
     let lines = wrapTextWithNewlines(ctx, text, maxWidth, trackingPx, boxes.length);
     const floor = minPx ?? 6;
     let fallback = null;
 
     while(size >= floor){
       setFont(ctx, size, weight);
-      trackingPx = size * TEXT_TRACKING_EM;
+      trackingPx = size * resolvedStyle.trackingEm;
       lines = wrapTextWithNewlines(ctx, text, maxWidth, trackingPx, boxes.length);
       const widthsOk = lines.every((line) => measureTracking(ctx, line, trackingPx) <= maxWidth + 0.5);
       const expectedLineCount = text.trim().length === 0 ? 1 : boxes.length;
@@ -230,9 +280,20 @@
     setFont(ctx, size, weight);
     ctx.textBaseline = "alphabetic";
 
-    lines.slice(0, boxes.length).forEach((line, index) => {
+    const usedLines = lines.slice(0, boxes.length);
+    const gapScale = usedLines.length > 1 && referenceSize > 0
+      ? Math.max(0.55, Math.min(1, size / referenceSize))
+      : 1;
+    const centers = resolveLineCenters(
+      boxes,
+      usedLines.length,
+      gapScale,
+      resolvedStyle.verticalShift
+    );
+
+    usedLines.forEach((line, index) => {
       const box = boxes[index];
-      const baseline = baselineForBBoxCenter(ctx, line, box.y + box.h / 2);
+      const baseline = baselineForBBoxCenter(ctx, line, centers[index]);
       drawTextTracking(ctx, line, box.x + box.w / 2, baseline, "center", trackingPx);
     });
 
@@ -259,6 +320,16 @@
     const lineProbe = {
       textA: config.states.A.textA[0].h,
       textB: config.states.A.textB[0].h
+    };
+    const textStyles = {
+      textA: {
+        ...TEXT_STYLE_DEFAULTS.textA,
+        ...(config.textStyles?.textA || {})
+      },
+      textB: {
+        ...TEXT_STYLE_DEFAULTS.textB,
+        ...(config.textStyles?.textB || {})
+      }
     };
 
     const badgeCanvas = document.getElementById("badgeCanvas");
@@ -321,8 +392,8 @@
     }
 
     function resolveStateKey(ctx, data){
-      const aLines = inferLineCount(ctx, data.textA, lineProbe.textA, 700, contentRect.w);
-      const bLines = inferLineCount(ctx, data.textB, lineProbe.textB, 800, contentRect.w);
+      const aLines = inferLineCount(ctx, data.textA, lineProbe.textA, 700, contentRect.w, textStyles.textA);
+      const bLines = inferLineCount(ctx, data.textB, lineProbe.textB, 800, contentRect.w, textStyles.textB);
       if(aLines === 1 && bLines === 1) return "A";
       if(aLines === 2 && bLines === 1) return "B";
       if(aLines === 1 && bLines === 2) return "C";
@@ -370,8 +441,8 @@
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, BADGE_W, BADGE_H);
 
-      drawTextBlock(ctx, data.textA, textABoxes, 700, contentRect.w, 6, lineProbe.textA);
-      drawTextBlock(ctx, data.textB, textBBoxes, 800, contentRect.w, 6, lineProbe.textB);
+      drawTextBlock(ctx, data.textA, textABoxes, 700, contentRect.w, 6, lineProbe.textA, textStyles.textA);
+      drawTextBlock(ctx, data.textB, textBBoxes, 800, contentRect.w, 6, lineProbe.textB, textStyles.textB);
       drawRole(ctx, data.role, roleBox);
       drawDate(ctx, data.textC);
 
@@ -482,6 +553,12 @@
       return base.length ? base.slice(0, 80) : "PASS";
     }
 
+    function showDownloadComplete(){
+      window.setTimeout(() => {
+        window.alert("고생하셨습니다");
+      }, 0);
+    }
+
     async function initAssets(){
       try{
         logoImg = await loadImage(svgToDataUrl(SVG_LOGO));
@@ -514,6 +591,7 @@
       });
       pdf.addImage(off.toDataURL("image/png"), "PNG", 0, 0, config.badgeWmm, config.badgeHmm, undefined, "FAST");
       pdf.save(`${sanitizeFilename(data.textA)}_Pass_${config.badgeWmm}-${config.badgeHmm}.pdf`);
+      showDownloadComplete();
     }
 
     async function downloadA4PDF(){
@@ -532,6 +610,7 @@
       });
       pdf.addImage(a4Canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, undefined, "FAST");
       pdf.save(`${sanitizeFilename(currentData().textA)}_Pass_${config.badgeWmm}-${config.badgeHmm}_A4.pdf`);
+      showDownloadComplete();
     }
 
     badgeCanvas.addEventListener("pointerdown", (evt) => {
