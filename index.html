@@ -19,6 +19,12 @@
 
   <script>
     const NOTION_MANUAL_URL = "https://www.notion.so/makestar/2fbc0f4dd8c8809ab052d2f4e977d7fd?source=copy_link";
+    const REVIEW_DEFAULTS = {
+      textA: "ArtistName AlbumFormat ‘AlbumName’",
+      textB: "EventFormat IN CityName",
+      textC: "YYYY.MM.DD",
+      role: "staff"
+    };
 
     const SIZE_OPTIONS = [
       { value: "93x124", label: "93*124mm / 일반", file: "pass_93x124.html" },
@@ -29,13 +35,46 @@
 
     const frame = document.getElementById("appFrame");
     let currentSize = "93x124";
+    let currentState = { ...REVIEW_DEFAULTS };
+
+    function buildQuery(state) {
+      const params = new URLSearchParams({
+        textA: state.textA,
+        textB: state.textB,
+        textC: state.textC,
+        role: state.role,
+        v: String(Date.now())
+      });
+      return params.toString();
+    }
+
+    function readFrameState() {
+      const doc = frame.contentDocument;
+      if (!doc) return null;
+
+      const textA = doc.getElementById("textA");
+      const textB = doc.getElementById("textB");
+      const textC = doc.getElementById("textC");
+      const role = doc.getElementById("role");
+
+      if (!textA || !textB || !textC || !role) return null;
+
+      return {
+        textA: textA.value,
+        textB: textB.value,
+        textC: textC.value,
+        role: role.value
+      };
+    }
 
     function loadSize(sizeKey) {
       const opt = SIZE_OPTIONS.find(o => o.value === sizeKey) || SIZE_OPTIONS[0];
       currentSize = opt.value;
 
-      // cache 방지용 쿼리
-      frame.src = opt.file + "?v=" + Date.now();
+      const liveState = readFrameState();
+      if (liveState) currentState = liveState;
+
+      frame.src = `${opt.file}?${buildQuery(currentState)}`;
     }
 
     function injectUI() {

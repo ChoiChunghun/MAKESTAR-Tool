@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MAKESTAR 비표 머신 통합 미리보기</title>
+  <link rel="icon" type="image/png" href="EPMVT_Favicon.png" />
+  <style>
+    :root {
+      --bg: #090909;
+      --panel: #121212;
+      --card: #0f0f0f;
+      --line: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.66);
+      --accent: #ff558f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, rgba(255,85,143,.12), transparent 28%), var(--bg);
+      color: var(--text);
+      font-family: Pretendard, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    .shell {
+      max-width: 1700px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+
+    .title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions a,
+    .actions button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .actions button.primary {
+      background: var(--accent);
+      border-color: rgba(255,255,255,.16);
+      color: white;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.25fr) minmax(260px, 1.25fr) minmax(150px, .7fr) minmax(150px, .55fr);
+      gap: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font: inherit;
+      outline: none;
+    }
+
+    .field textarea {
+      min-height: 72px;
+      resize: vertical;
+      line-height: 1.25;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: 760px;
+    }
+
+    .cardHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
+
+    .cardHead strong {
+      font-size: 16px;
+    }
+
+    .cardHead span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .cardHead a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,.04);
+      white-space: nowrap;
+    }
+
+    iframe {
+      width: 100%;
+      height: 700px;
+      border: 0;
+      display: block;
+      background: #ff00ff;
+    }
+
+    @media (max-width: 1180px) {
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 16px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="title">
+        <div>
+          <h1>통합 미리보기</h1>
+          <p>같은 입력값으로 4개 사이즈를 한 화면에서 비교합니다.</p>
+        </div>
+        <div class="actions">
+          <button id="applyBtn" class="primary" type="button">미리보기 갱신</button>
+          <button id="resetBtn" type="button">기본값으로 복원</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="field">
+          <label for="textA">아티스트 + 앨범명 <span>최대 2줄</span></label>
+          <textarea id="textA" rows="2">ArtistName AlbumFormat ‘AlbumName’</textarea>
+        </div>
+        <div class="field">
+          <label for="textB">이벤트 + 도시명 <span>최대 2줄</span></label>
+          <textarea id="textB" rows="2">EventFormat IN CityName</textarea>
+        </div>
+        <div class="field">
+          <label for="textC">행사일</label>
+          <input id="textC" type="text" value="YYYY.MM.DD" />
+        </div>
+        <div class="field">
+          <label for="role">역할</label>
+          <select id="role">
+            <option value="staff" selected>STAFF</option>
+            <option value="artist">ARTIST</option>
+            <option value="vip">VIP</option>
+            <option value="aaa">AAA</option>
+            <option value="team">TEAM</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" id="previewGrid"></div>
+  </div>
+
+  <script>
+    const PAGES = [
+      { label: "70x105", note: "중국 현지 이벤트 1", file: "pass_70x105.html" },
+      { label: "73x103", note: "중국 현지 이벤트 2", file: "pass_73x103.html" },
+      { label: "93x124", note: "일반", file: "pass_93x124.html" },
+      { label: "96x122", note: "SM", file: "pass_96x122.html" }
+    ];
+
+    const DEFAULTS = {
+      textA: "ArtistName AlbumFormat ‘AlbumName’",
+      textB: "EventFormat IN CityName",
+      textC: "YYYY.MM.DD",
+      role: "staff"
+    };
+
+    const gridEl = document.getElementById("previewGrid");
+    const textAEl = document.getElementById("textA");
+    const textBEl = document.getElementById("textB");
+    const textCEl = document.getElementById("textC");
+    const roleEl = document.getElementById("role");
+    const applyBtn = document.getElementById("applyBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    function buildCards() {
+      PAGES.forEach((page) => {
+        const card = document.createElement("section");
+        card.className = "card";
+
+        const head = document.createElement("div");
+        head.className = "cardHead";
+        head.innerHTML = `
+          <div>
+            <strong>${page.label}</strong>
+            <span>${page.note}</span>
+          </div>
+        `;
+
+        const link = document.createElement("a");
+        link.textContent = "개별 편집 열기";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        head.appendChild(link);
+
+        const frame = document.createElement("iframe");
+        frame.setAttribute("loading", "lazy");
+        frame.dataset.file = page.file;
+        frame.dataset.linkTarget = page.file;
+
+        card.appendChild(head);
+        card.appendChild(frame);
+        gridEl.appendChild(card);
+      });
+    }
+
+    function currentQuery() {
+      const params = new URLSearchParams({
+        mode: "badge-only",
+        textA: textAEl.value,
+        textB: textBEl.value,
+        textC: textCEl.value,
+        role: roleEl.value,
+        v: String(Date.now())
+      });
+      return params.toString();
+    }
+
+    function updateFrames() {
+      const query = currentQuery();
+      document.querySelectorAll("iframe").forEach((frame) => {
+        frame.src = `${frame.dataset.file}?${query}`;
+      });
+      document.querySelectorAll(".cardHead a").forEach((link, index) => {
+        const page = PAGES[index];
+        link.href = `${page.file}?${new URLSearchParams({
+          textA: textAEl.value,
+          textB: textBEl.value,
+          textC: textCEl.value,
+          role: roleEl.value,
+          v: String(Date.now())
+        }).toString()}`;
+      });
+    }
+
+    function resetValues() {
+      textAEl.value = DEFAULTS.textA;
+      textBEl.value = DEFAULTS.textB;
+      textCEl.value = DEFAULTS.textC;
+      roleEl.value = DEFAULTS.role;
+      updateFrames();
+    }
+
+    buildCards();
+    updateFrames();
+
+    applyBtn.addEventListener("click", updateFrames);
+    resetBtn.addEventListener("click", resetValues);
+    [textAEl, textBEl, textCEl, roleEl].forEach((el) => {
+      el.addEventListener("change", updateFrames);
+    });
+  </script>
+</body>
+</html>

@@ -215,6 +215,10 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
       font-size:11px;
       color:var(--muted)
     }
+    .versionTag{
+      color:#FFBF00;
+      font-weight:700;
+    }
 
     /* ✅ Copyright footer: 하단 고정 + 센터 정렬 */
     .panelFooter{
@@ -231,7 +235,7 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
 <body>
   <div class="wrap">
     <div class="panel">
-      <h1>MAKESTAR 비표 머신 <span class="tiny"> v2 • Manual </span></h1>
+      <h1>MAKESTAR 비표 머신 <span class="tiny versionTag"> v3 • Manual </span></h1>
 
       <div class="row">
         <label>아티스트 + 앨범명<span class="tiny">e.g. LE SSERAFIM 1st Single Album ‘SPAGHETTI’</span></label>
@@ -240,7 +244,7 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
 
       <div class="row">
         <label>이벤트 + 도시명<span class="tiny">e.g. OFFLINE EVENT IN WARSZAW</span></label>
-        <input id="textB" type="text" value="EventFormat IN CityName" />
+        <textarea id="textB" rows="2">EventFormat IN CityName</textarea>
       </div>
 
       <div class="row">
@@ -253,6 +257,9 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
         <select id="role">
           <option value="staff" selected>STAFF</option>
           <option value="artist">ARTIST</option>
+          <option value="vip">VIP</option>
+          <option value="aaa">AAA</option>
+          <option value="team">TEAM</option>
         </select>
       </div>
 
@@ -300,6 +307,51 @@ textarea{min-height:44px;resize:vertical;line-height:1.25;}
   </div>
 
 <script>
+  window.PASS_MACHINE_CONFIG = {
+    badgeWmm: 73,
+    badgeHmm: 103,
+    previewCanvasWidth: 360,
+    a4CanvasWidth: 600,
+    contentRect: { x: 77, w: 708 },
+    photoRect: { x: 77, y: 566, w: 708, h: 490 },
+    roleArea: { x: 109, w: 646 },
+    dateBox: { x: 79, y: 477, w: 704, h: 42 },
+    logoBox: { x: 339, y: 1086, w: 184, h: 26 },
+    textStyles: {
+      textA: { fontScale: 1.01, trackingEm: 0.006, verticalShift: 0 },
+      textB: { fontScale: 1.0 }
+    },
+    states: {
+      A: {
+        textA: [{ y: 127, h: 25 }],
+        textB: [{ y: 177, h: 38 }],
+        role: { y: 277, h: 152 },
+        date: { y: 477, h: 42 }
+      },
+      B: {
+        textA: [{ y: 97, h: 25 }, { y: 143, h: 25 }],
+        textB: [{ y: 189, h: 38 }],
+        role: { y: 277, h: 152 },
+        date: { y: 477, h: 42 }
+      },
+      C: {
+        textA: [{ y: 97, h: 25 }],
+        textB: [{ y: 147, h: 35 }, { y: 202, h: 35 }],
+        role: { y: 277, h: 152 },
+        date: { y: 477, h: 42 }
+      },
+      D: {
+        textA: [{ y: 97, h: 25 }, { y: 143, h: 25 }],
+        textB: [{ y: 189, h: 35 }, { y: 243, h: 35 }],
+        role: { y: 310, h: 152 },
+        date: { y: 493, h: 38 }
+      }
+    }
+  };
+</script>
+<script src="pass-machine.js"></script>
+<script>
+if (!window.__PASS_MACHINE_BOOTED__) {
 /** ===========================
  *  Logo SVG (항상 노출)
  * =========================== */
@@ -907,6 +959,7 @@ dlPDFBtn.addEventListener("click", downloadA4PDF);
   await initAssetsSafely();
   renderAll();
 })();
+}
 </script>
 </body>
 </html>
